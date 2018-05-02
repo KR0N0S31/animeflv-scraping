@@ -4,7 +4,6 @@ from scraping.main import FactoryListAnime as fla
 
 def create_all_animes_records():
     links = fla.get_all_animes()
-    animes = []
     with open('animes.txt', 'w') as text_file:
         for i in links:
             anime = fla.get_anime(i)
@@ -12,7 +11,6 @@ def create_all_animes_records():
                 Anime.get(aid=anime.aid)
             except:
                 DataBase.create_anime_record(anime)
-                animes.append(anime)
             text_file.write(i+"\n")
 
 if __name__ == '__main__':
