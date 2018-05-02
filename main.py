@@ -7,11 +7,11 @@ def create_all_animes_records():
     with open('animes.txt', 'w') as text_file:
         for i in links:
             anime = fla.get_anime(i)
+            text_file.write(i+"\n")
             try:
                 Anime.get(aid=anime.aid)
             except:
                 DataBase.create_anime_record(anime)
-            text_file.write(i+"\n")
 
 if __name__ == '__main__':
     DataBase.create_tables()
