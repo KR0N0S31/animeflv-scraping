@@ -53,11 +53,19 @@ class FactoryListAnime:
         aid = int(split[2])
         slug = split[3]
         del split
-        name = containers[1].find('h2', {'class': 'Title'}).string
+        name = containers[1].find('h2', {'class': 'Title'})
+        name = name.string or name.get_text()
+        if '[email protected]' == name:
+            name = name.replace('[email protected]', 'Sasami-san@Ganbaranai')
+        elif 'idolmaster' in url or 'idolmster' in url:
+            name = name.replace('[email protected]', 'iDOLM@STER')
         anime_type = containers[1].find('span', {'class': 'Type'}).string
         image = containers[2].find('div', {'class': 'AnimeCover'}).find('img')['src']
         state = containers[2].find('p', {'class': 'AnmStts'}).find('span').string
-        synopsis = containers[2].find('div', {'class': 'Description'}).find('p').string
+        synopsis = containers[2].find('div', {'class': 'Description'}).find('p')
+        synopsis = synopsis.string or synopsis.get_text()
+        if 'idolmaster' in url or 'idolmster' in url:
+            synopsis = synopsis.replace('[email protected]', 'iDOLM@STER')
         genres = containers[2].find('nav', {'class': 'Nvgnrs'}).find_all('a')
         genres = [i.string for i in genres]
         episodes = containers[2].find('ul', {'class': 'ListCaps'}) or containers[2].find('ul', {'class': 'ListEpisodes'})
@@ -67,7 +75,7 @@ class FactoryListAnime:
         episode_list = []
         for i in range(a, b):
             ep_name_obj = episodes[i].find('p') or episodes[i].find('a')
-            ep_name = ep_name_obj.string or ep_name_obj.get_text()
+            ep_name = ep_name_obj.string or 'Episodio '+str(b-i)
             ep_url = episodes[i].find('a')['href']
             ep_img = episodes[i].find('img', {'class': 'lazy'})
             if ep_img is not None:
@@ -139,6 +147,7 @@ episode_list: {}
 listAnmRel: {}
         """.format(
                 self.aid,
+                self.url,
                 self.slug,
                 self.name,
                 self.image,
@@ -146,7 +155,7 @@ listAnmRel: {}
                 self.state,
                 self.synopsis,
                 self.genres,
-                str([str(i.name) for i in self.episode_list]),
+                str([str(i) for i in self.episode_list]),
                 str([str(i) for i in self.listAnmRel])
             )
         return string
