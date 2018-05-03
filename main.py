@@ -1,4 +1,4 @@
-from db.models import Anime, AnimeGenre, Genre
+from db.models import Anime, AnimeState, State
 from db.actions import DataBase
 from scraping.main import FactoryListAnime as fla
 
@@ -15,7 +15,6 @@ def create_all_animes_records():
 
 if __name__ == '__main__':
     DataBase.create_tables()
-    # fla.get_all_animes()
     create_all_animes_records()
 
     # query = (Anime
