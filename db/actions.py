@@ -30,6 +30,8 @@ class DataBase:
         if not isinstance(anime, AnimeScraping):
             raise TypeError("anime must be a AnimeScraping")
         
+        print("Creating record of: {}".format(anime.url))
+        
         anime_record = Anime.create(**anime.to_db())
         anime_record.save()
         for i in anime.genres:
@@ -46,12 +48,15 @@ class DataBase:
             Episode.create(**i).save()
     
     @staticmethod
-    def update_anime(anime):
+    def update_anime(anime, animesp=None):
     
         if not isinstance(anime, Anime):
             raise TypeError("anime must be a Anime")
+        if not (isinstance(animesp, AnimeScraping) or animesp is None):
+            raise TypeError("anime must be a AnimeScraping or not send this parameter")
 
-        anime_data = fla.get_anime(anime.url)
+        anime_data = fla.get_anime(anime.url) if animesp is None else animesp
+        print("Updating: {}".format(anime_data.url))
 
         if anime.aid != anime_data.aid:
             anime.aid = anime_data.aid
@@ -151,6 +156,7 @@ class DataBase:
             .join(State)
             .where(State.state == 'En emision')
         )
+        print("Hay {} animes en emision".format(len(query)))
         with DATABASE.atomic():
             for i in query:
                 DataBase.update_anime(i)
@@ -161,10 +167,10 @@ class DataBase:
         with open('animes.txt', 'w') as text_file:
             with DATABASE.atomic():
                 for i in links:
-                    anime = fla.get_anime(i)
+                    animesp = fla.get_anime(i)
                     text_file.write(i+"\n")
                     try:
-                        anime = Anime.get(aid=anime.aid)
-                        DataBase.update_anime(anime)
+                        animedb = Anime.get(aid=animesp.aid)
+                        DataBase.update_anime(animedb, animesp)
                     except:
-                        DataBase.create_anime_record(anime)
+                        DataBase.create_anime_record(animesp)
