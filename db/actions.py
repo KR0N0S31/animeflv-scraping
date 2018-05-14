@@ -1,8 +1,7 @@
-import peewee as pw
-from scraping.main import AnimeScraping
+from scraping.main import AnimeScraping, EpisodeScraping, AnimeReltionScraping
 from scraping.main import FactoryListAnime as fla
 from db.settings import DATABASE 
-from .models import Genre, Anime, AnimeGenre, AnimeRelation, Episode, State, AnimeState
+from .models import Genre, Anime, AnimeGenre, AnimeRelation, Episode, State
 
 
 class DataBase:
@@ -21,8 +20,6 @@ class DataBase:
             Episode.create_table()
         if not State.table_exists():
             State.create_table()
-        if not AnimeState.table_exists():
-            AnimeState.create_table()
 
     @staticmethod
     def create_anime_record(anime):
@@ -31,14 +28,13 @@ class DataBase:
             raise TypeError("anime must be a AnimeScraping")
         
         print("Creating record of: {}".format(anime.url))
-        
-        anime_record = Anime.create(**anime.to_db())
+        datos = anime.to_db()
+        datos['state'], created = State.get_or_create(state=anime.state)
+        anime_record = Anime.create(**datos)
         anime_record.save()
         for i in anime.genres:
             genre, created = Genre.get_or_create(genre=i)
             AnimeGenre.create(anime=anime_record, genre=genre).save()
-        state, created = State.get_or_create(state=anime.state)
-        AnimeState.create(anime=anime_record, state=state).save()
 
         for i in anime.animeRel_to_db():
             i['anime'] = anime_record
@@ -62,6 +58,8 @@ class DataBase:
             anime.aid = anime_data.aid
         if anime.slug != anime_data.slug:
             anime.slug = anime_data.slug
+        if anime.state.state != anime_data.state:
+            anime.state, created = State.get_or_create(state=anime_data.state)
         if anime.url != anime_data.url:
             anime.url = anime_data.url
         if anime.name != anime_data.name:
@@ -92,17 +90,6 @@ class DataBase:
                     update_genres(anime, anime_data)
                     break
 
-
-        def update_state(anime, anime_data):
-            AnimeState.delete().where(AnimeState.anime == anime).execute()
-            state, created = State.get_or_create(state=anime_data.state)
-            AnimeState.create(anime=anime, state=state).save()
-        
-        query = AnimeState.get(AnimeState.anime == anime)
-        if query.state.state != anime_data.state:
-            update_state(anime, anime_data)
-
-
         def update_relations(anime, anime_data):
             AnimeRelation.delete().where(AnimeRelation.anime == anime).execute()
             for i in anime_data.animeRel_to_db():
@@ -118,7 +105,6 @@ class DataBase:
         else:
             for i in range(len(query)):
                 if (
-                    query[i].aid != anime_data.listAnmRel[i].aid or 
                     query[i].rel != anime_data.listAnmRel[i].rel or
                     query[i].url != anime_data.listAnmRel[i].url
                     ):
@@ -152,7 +138,6 @@ class DataBase:
     def update_animes_in_emision():
         query = (Anime
             .select()
-            .join(AnimeState)
             .join(State)
             .where(State.state == 'En emision')
         )
@@ -174,3 +159,43 @@ class DataBase:
                         DataBase.update_anime(animedb, animesp)
                     except:
                         DataBase.create_anime_record(animesp)
+    
+    @staticmethod
+    def search_animes(name):
+        aList = (Anime.select()
+            .where(Anime.name.contains(name))
+        )
+        animes = []
+        for i in aList:
+            gList = (AnimeGenre.select()
+                .join(Anime)
+                .where(AnimeGenre.anime == i)
+            )
+            genres = [j.genre.genre for j in gList]
+            rList = (AnimeRelation.select()
+                .join(Anime)
+                .where(AnimeRelation.anime == i)
+            )
+            listAnmRel = [AnimeReltionScraping(j.url, j.rel) for j in rList]
+            eList = (Episode.select()
+                .join(Anime)
+                .where(Episode.anime == i)
+            )
+            episode_list = [EpisodeScraping(j.name, j.url, j.image) for j in eList ]
+            
+            anime = AnimeScraping(
+                    i.aid,
+                    i.url,
+                    i.slug,
+                    i.name,
+                    i.image,
+                    i.anime_type,
+                    i.state.state,
+                    i.synopsis,
+                    genres,
+                    episode_list,
+                    listAnmRel
+                )
+            animes.append(anime)
+        return animes
+

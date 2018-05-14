@@ -1,8 +1,6 @@
 import re, sys
 import requests
 from bs4 import BeautifulSoup
-from bs4.element import Tag
-
 
 class FactoryListAnime:
     
@@ -52,17 +50,22 @@ class FactoryListAnime:
 
         split = url.split('/')
         scripts = soup.find_all('script')
+        scripts.reverse()
+        script = None
         for i in scripts:
             if "var anime_id" in i.get_text():
                 script = i
                 break
+        if script is None:
+            print("Error en: " + url)
+            sys.exit(1)
         script = script.get_text()
         patron = re.compile("[0-9]+")
         aid = patron.search(script).group(0)
         try:
             aid = int(aid)
         except:
-            print(url)
+            print("Error en: " + url)
             sys.exit(1)
         
         slug = split[3]
@@ -105,6 +108,10 @@ class FactoryListAnime:
             for i in cont_listAnmRel:
                 link = i.find('a')['href']
                 rel = str(i).split('</a>')[-1].split('</li>')[0]
+                rel = rel.replace("(", "")
+                rel = rel.replace(")", "")
+                if rel[0] == " ":
+                    rel = rel[1:]
                 listAnmRel.append(AnimeReltionScraping(link, rel))
             del cont_listAnmRel
         else:
@@ -126,11 +133,9 @@ class AnimeReltionScraping:
     def __init__(self, url, rel, *args, **kwargs):
         self.url = url
         self.rel = rel
-        self.aid = url.split('/')[2]
-        self.slug = url.split('/')[3]
 
     def __str__(self):
-        return self.aid + ":" + self.rel
+        return self.url + ":" + self.rel
 
 class AnimeScraping:
     def __init__(self, aid, url, slug, name, image, anime_type, state, synopsis, genres, episode_list, listAnmRel, *args, **kwargs):
@@ -183,7 +188,6 @@ listAnmRel: {}
             'name': self.name,
             'image': self.image,
             'anime_type': self.anime_type,
-            'state': self.state,
             'synopsis': self.synopsis,
         }
         return query
@@ -194,8 +198,6 @@ listAnmRel: {}
             query = {
                 'url': i.url,
                 'rel': i.rel,
-                'aid': i.aid,
-                'slug': i.slug
             }
             query_list.append(query)
         return query_list

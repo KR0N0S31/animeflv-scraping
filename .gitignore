@@ -2,3 +2,5 @@
 *.pyc
 .vscode
 ddbb.sqlite3
+animes.txt
+activate.sh

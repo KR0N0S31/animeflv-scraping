@@ -22,6 +22,7 @@ class State(BaseModel):
 class Anime(BaseModel):
     aid = pw.IntegerField(unique=True)
     slug = pw.CharField(unique=True)
+    state = pw.ForeignKeyField(State)
     url = pw.CharField(unique=True)
     name = pw.CharField()
     anime_type = pw.CharField()
@@ -38,18 +39,9 @@ class AnimeGenre(BaseModel):
     class Meta:
         db_table = 'AnimesGenres'
 
-class AnimeState(BaseModel):
-    anime = pw.ForeignKeyField(Anime)
-    state = pw.ForeignKeyField(State)
-
-    class Meta:
-        db_table = 'AnimesStates'
-
 class AnimeRelation(BaseModel):
     url = pw.CharField()
     rel = pw.CharField()
-    aid = pw.CharField()
-    slug = pw.CharField()
     anime = pw.ForeignKeyField(Anime, related_name='anime_related')
 
     class Meta:
