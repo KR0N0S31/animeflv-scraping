@@ -1,3 +1,4 @@
+import re, sys
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag
@@ -50,7 +51,20 @@ class FactoryListAnime:
         containers = soup.find_all('div', {'class': 'Container'})
 
         split = url.split('/')
-        aid = int(split[2])
+        scripts = soup.find_all('script')
+        for i in scripts:
+            if "var anime_id" in i.get_text():
+                script = i
+                break
+        script = script.get_text()
+        patron = re.compile("[0-9]+")
+        aid = patron.search(script).group(0)
+        try:
+            aid = int(aid)
+        except:
+            print(url)
+            sys.exit(1)
+        
         slug = split[3]
         del split
         name = containers[1].find('h2', {'class': 'Title'})
